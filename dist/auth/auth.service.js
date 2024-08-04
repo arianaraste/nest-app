@@ -31,8 +31,7 @@ let AuthService = class AuthService {
                     hash: hash
                 }
             });
-            delete user.hash;
-            return user;
+            return this.signToken(user.id, user.email);
         }
         catch (error) {
             if (error instanceof library_1.PrismaClientKnownRequestError) {
@@ -54,8 +53,6 @@ let AuthService = class AuthService {
             const verifyPassword = await argon.verify(user.hash, dto.password);
             if (!verifyPassword)
                 throw new common_1.ForbiddenException('Credentials incorrect');
-            delete user.hash;
-            delete user.id;
             return this.signToken(user.id, user.email);
         }
         catch (error) {
@@ -67,9 +64,14 @@ let AuthService = class AuthService {
             sub: userId,
             email
         };
-        return this.jwt.signAsync(payload, {
-            secret: this.config.get('SECRET')
+        const secret = this.config.get('SECRET');
+        const token = await this.jwt.signAsync(payload, {
+            expiresIn: "15m",
+            secret: secret
         });
+        return {
+            accessToken: token
+        };
     }
 };
 exports.AuthService = AuthService;

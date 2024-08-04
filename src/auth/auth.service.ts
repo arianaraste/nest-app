@@ -22,9 +22,8 @@ export class AuthService {
                 email: dto.email,
                 hash: hash
             }})
-            // return user  
-            delete user.hash
-            return user
+            // return Token
+            return this.signToken(user.id, user.email);
         } catch (error) {
             if( error instanceof PrismaClientKnownRequestError){
                 if( error.code === "P2002")
@@ -63,9 +62,7 @@ export class AuthService {
            throw new ForbiddenException(
                'Credentials incorrect'
        )
-      // return user
-      delete user.hash;
-      delete user.id
+       // return Token
       return this.signToken(user.id,user.email)
         } catch (error) {
             throw error
@@ -74,17 +71,22 @@ export class AuthService {
     async signToken(
         userId: number,
         email: string
-    ):Promise<String>{
-        // inject paylodd
+    ):Promise<{accessToken: string}>{
+        // inject paylod
         const payload =
              {
                 sub: userId,
                 email
             };
-
+        // inject secretKey
+        const secret = this.config.get('SECRET');
         //return jwt
-        return this.jwt.signAsync(payload,{
-            secret: this.config.get('SECRET')
-        })
+        const token = await this.jwt.signAsync(payload, {
+            expiresIn: "15m",
+            secret : secret
+        });
+        return {
+            accessToken: token 
+        }
     }
 }
